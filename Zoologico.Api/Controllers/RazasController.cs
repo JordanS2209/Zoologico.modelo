@@ -13,9 +13,9 @@ namespace Zoologico.Api.Controllers
     [ApiController]
     public class RazasController : ControllerBase
     {
-        private readonly ZoologicoApiContext _context;
+        private readonly SqlServerDbContext _context;
 
-        public RazasController(ZoologicoApiContext context)
+        public RazasController(SqlServerDbContext context)
         {
             _context = context;
         }
@@ -31,9 +31,7 @@ namespace Zoologico.Api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Raza>> GetRaza(int id)
         {
-            var raza = await _context.Razas
-                .Include(r => r.Animales)
-                .FirstOrDefaultAsync(r => r.Id == id);
+            var raza = await _context.Razas.FindAsync(id);
 
             if (raza == null)
             {

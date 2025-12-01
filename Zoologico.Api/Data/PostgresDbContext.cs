@@ -5,16 +5,15 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Zoologico.modelo;
 
-    public class ZoologicoApiContext : DbContext
+    public class PostgresDbContext : DbContext
     {
-        public ZoologicoApiContext (DbContextOptions<ZoologicoApiContext> options)
+        public PostgresDbContext (DbContextOptions<PostgresDbContext> options)
             : base(options)
         {
         }
 
-        public DbSet<Zoologico.modelo.Animal> Animales { get; set; } = default!;
-
+        public DbSet<Zoologico.modelo.Animal> Animal { get; set; } = default!;
         public DbSet<Zoologico.modelo.Especie> Especies { get; set; } = default!;
 
         public DbSet<Zoologico.modelo.Raza> Razas { get; set; } = default!;
-    }
+}

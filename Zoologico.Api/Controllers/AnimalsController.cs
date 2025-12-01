@@ -11,33 +11,27 @@ namespace Zoologico.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AnimalesController : ControllerBase
+    public class AnimalsController : ControllerBase
     {
-        private readonly ZoologicoApiContext _context;
+        private readonly SqlServerDbContext _context;
 
-        public AnimalesController(ZoologicoApiContext context)
+        public AnimalsController(SqlServerDbContext context)
         {
             _context = context;
-            
         }
 
-        // GET: api/Animales
+        // GET: api/Animals
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Animal>>> GetAnimal()
         {
             return await _context.Animales.ToListAsync();
         }
 
-        // GET: api/Animales/5
+        // GET: api/Animals/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Animal>> GetAnimal(int id)
         {
-            var animal = await _context
-               .Animales
-               .Include(a => a.Especie)
-               .Include(a => a.Raza)
-               .Where(a => a.Id == id)
-               .FirstOrDefaultAsync();
+            var animal = await _context.Animales.FindAsync(id);
 
             if (animal == null)
             {
@@ -47,7 +41,7 @@ namespace Zoologico.Api.Controllers
             return animal;
         }
 
-        // PUT: api/Animales/5
+        // PUT: api/Animals/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutAnimal(int id, Animal animal)
@@ -78,7 +72,7 @@ namespace Zoologico.Api.Controllers
             return NoContent();
         }
 
-        // POST: api/Animales
+        // POST: api/Animals
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Animal>> PostAnimal(Animal animal)
@@ -86,13 +80,10 @@ namespace Zoologico.Api.Controllers
             _context.Animales.Add(animal);
             await _context.SaveChangesAsync();
 
-            animal.Especie = await _context.Especies.FindAsync(animal.EspecieId);
-            animal.Raza = await _context.Razas.FindAsync(animal.RazaId);
-
             return CreatedAtAction("GetAnimal", new { id = animal.Id }, animal);
         }
 
-        // DELETE: api/Animales/5
+        // DELETE: api/Animals/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAnimal(int id)
         {
