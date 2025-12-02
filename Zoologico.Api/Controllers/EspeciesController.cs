@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Zoologico.modelo;
@@ -13,95 +12,189 @@ namespace Zoologico.Api.Controllers
     [ApiController]
     public class EspeciesController : ControllerBase
     {
-        private readonly SqlServerDbContext _context;
+        private readonly SqlServerDbContext _sqlcontext;
+        private readonly PostgresDbContext _pgContext;
 
-        public EspeciesController(SqlServerDbContext context)
+        public EspeciesController(SqlServerDbContext sqlcontext, PostgresDbContext pgContext)
         {
-            _context = context;
+            _sqlcontext = sqlcontext;
+            _pgContext = pgContext;
         }
 
-        // GET: api/Especies
+        // GET: api/Especies (combina ambas bases)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Especie>>> GetEspecie()
+        public async Task<ActionResult<ApiResult<List<Especie>>>> GetEspecie()
         {
-            return await _context.Especies.ToListAsync();
-        }
-
-        // GET: api/Especies/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Especie>> GetEspecie(int id)
-        {
-            var especie = await _context.Especies.FindAsync(id);
-
-            if (especie == null)
+            try
             {
-                return NotFound();
-            }
+                Console.WriteLine("Obteniendo datos de SQL Server...");
+                var dataSql = await _sqlcontext.Especies
+                    .Include(e => e.Animales)
+                    .ToListAsync();
 
-            return especie;
+                Console.WriteLine("Obteniendo datos de PostgreSQL...");
+                var dataPg = await _pgContext.Especies
+                    .Include(e => e.Animales)
+                    .ToListAsync();
+
+                var allData = dataSql.Concat(dataPg).ToList();
+                return ApiResult<List<Especie>>.Ok(allData);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<List<Especie>>.Fail(ex.Message);
+            }
         }
 
-        // PUT: api/Especies/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // GET: api/Especies/5 (busca en ambas bases, prioriza SQL Server)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ApiResult<Especie>>> GetEspecie(int id)
+        {
+            try
+            {
+                var especieSql = await _sqlcontext.Especies
+                    .Include(e => e.Animales)
+                    .FirstOrDefaultAsync(e => e.Id == id);
+
+                var especiePg = await _pgContext.Especies
+                    .Include(e => e.Animales)
+                    .FirstOrDefaultAsync(e => e.Id == id);
+
+                if (especieSql == null && especiePg == null)
+                {
+                    return ApiResult<Especie>.Fail("Datos no encontrados en ninguna base de datos");
+                }
+
+                return ApiResult<Especie>.Ok(especieSql ?? especiePg);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<Especie>.Fail(ex.Message);
+            }
+        }
+
+        // PUT: api/Especies/5 (actualiza en ambas bases)
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutEspecie(int id, Especie especie)
+        public async Task<ActionResult<ApiResult<Especie>>> PutEspecie(int id, Especie especie)
         {
             if (id != especie.Id)
             {
-                return BadRequest();
+                return ApiResult<Especie>.Fail("Identificador no coincide");
             }
 
-            _context.Entry(especie).State = EntityState.Modified;
+            _sqlcontext.Entry(especie).State = EntityState.Modified;
+            _pgContext.Entry(especie).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _sqlcontext.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
-                if (!EspecieExists(id))
+                if (!EspecieExistsSql(id))
                 {
-                    return NotFound();
+                    return ApiResult<Especie>.Fail("Datos no encontrados en SQL Server");
                 }
                 else
                 {
-                    throw;
+                    return ApiResult<Especie>.Fail(ex.Message);
                 }
             }
 
-            return NoContent();
-        }
-
-        // POST: api/Especies
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Especie>> PostEspecie(Especie especie)
-        {
-            _context.Especies.Add(especie);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetEspecie", new { id = especie.Id }, especie);
-        }
-
-        // DELETE: api/Especies/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteEspecie(int id)
-        {
-            var especie = await _context.Especies.FindAsync(id);
-            if (especie == null)
+            try
             {
-                return NotFound();
+                await _pgContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (!EspecieExistsPg(id))
+                {
+                    return ApiResult<Especie>.Fail("Datos no encontrados en PostgreSQL");
+                }
+                else
+                {
+                    return ApiResult<Especie>.Fail(ex.Message);
+                }
             }
 
-            _context.Especies.Remove(especie);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return ApiResult<Especie>.Ok(null);
         }
 
-        private bool EspecieExists(int id)
+        // POST: api/Especies (crea en ambas bases)
+        [HttpPost]
+        public async Task<ActionResult<ApiResult<Especie>>> PostEspecie(Especie especie)
         {
-            return _context.Especies.Any(e => e.Id == id);
+            // Guardar en SQL Server
+            try
+            {
+                _sqlcontext.Especies.Add(especie);
+                await _sqlcontext.SaveChangesAsync();
+            }
+            catch (Exception exSql)
+            {
+                return ApiResult<Especie>.Fail($"Error en SQL Server: {exSql.Message}");
+            }
+
+            // Guardar en PostgreSQL (nuevo objeto para evitar conflicto de ID)
+            try
+            {
+                var especiePg = new Especie
+                {
+                    Nombre = especie.Nombre
+                };
+                _pgContext.Especies.Add(especiePg);
+                await _pgContext.SaveChangesAsync();
+            }
+            catch (Exception exPg)
+            {
+                return ApiResult<Especie>.Fail($"Error en PostgreSQL: {exPg.Message}");
+            }
+
+            return ApiResult<Especie>.Ok(especie);
+        }
+
+        // DELETE: api/Especies/5 (elimina en ambas bases)
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<ApiResult<Especie>>> DeleteEspecie(int id)
+        {
+            try
+            {
+                var especieSql = await _sqlcontext.Especies.FindAsync(id);
+                var especiePg = await _pgContext.Especies.FindAsync(id);
+
+                if (especieSql == null && especiePg == null)
+                {
+                    return ApiResult<Especie>.Fail("Datos no encontrados en ninguna base de datos");
+                }
+
+                if (especieSql != null)
+                {
+                    _sqlcontext.Especies.Remove(especieSql);
+                    await _sqlcontext.SaveChangesAsync();
+                }
+
+                if (especiePg != null)
+                {
+                    _pgContext.Especies.Remove(especiePg);
+                    await _pgContext.SaveChangesAsync();
+                }
+
+                return ApiResult<Especie>.Ok(null);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<Especie>.Fail(ex.Message);
+            }
+        }
+
+        private bool EspecieExistsSql(int id)
+        {
+            return _sqlcontext.Especies.Any(e => e.Id == id);
+        }
+
+        private bool EspecieExistsPg(int id)
+        {
+            return _pgContext.Especies.Any(e => e.Id == id);
         }
     }
 }
