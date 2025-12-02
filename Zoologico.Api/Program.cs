@@ -6,10 +6,10 @@ var SqlServerConeccion = builder.Configuration.GetConnectionString("PostgresDbCo
 var PostgresConeccion = builder.Configuration.GetConnectionString("SqlServerDbContext");
 // Coneccion a PostgreSQL ----------------------------------------------------------------------------
 builder.Services.AddDbContext<PostgresDbContext>(options =>
-    options.UseNpgsql( PostgresConeccion, sqlOptions =>
+    options.UseNpgsql(PostgresConeccion, npgsqlOptions =>
     {
-        sqlOptions.MigrationsAssembly(typeof(PostgresDbContext).Assembly.FullName);
-        sqlOptions.MigrationsHistoryTable("_EFMigrationsHistory_PostgresSQL");
+        npgsqlOptions.MigrationsAssembly(typeof(PostgresDbContext).Assembly.FullName);
+        npgsqlOptions.MigrationsHistoryTable("_EFMigrationsHistory_PostgresSQL");
     
     }));
 // Coneccion a SQL Server ----------------------------------------------------------------------------
