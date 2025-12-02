@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Zoologico.Api.Migrations.SqlServer
 {
     [DbContext(typeof(SqlServerDbContext))]
-    [Migration("20251202005014_Initial_SqlServer")]
+    [Migration("20251202044050_Initial_SqlServer")]
     partial class Initial_SqlServer
     {
         /// <inheritdoc />

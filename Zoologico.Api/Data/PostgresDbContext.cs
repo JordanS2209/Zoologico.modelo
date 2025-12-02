@@ -12,7 +12,7 @@ using Zoologico.modelo;
         {
         }
 
-        public DbSet<Zoologico.modelo.Animal> Animal { get; set; } = default!;
+        public DbSet<Zoologico.modelo.Animal> Animales { get; set; } = default!;
         public DbSet<Zoologico.modelo.Especie> Especies { get; set; } = default!;
 
         public DbSet<Zoologico.modelo.Raza> Razas { get; set; } = default!;

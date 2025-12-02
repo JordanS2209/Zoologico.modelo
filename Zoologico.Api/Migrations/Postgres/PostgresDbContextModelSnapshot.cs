@@ -51,7 +51,7 @@ namespace Zoologico.Api.Migrations.Postgres
 
                     b.HasIndex("RazaId");
 
-                    b.ToTable("Animal");
+                    b.ToTable("Animales");
                 });
 
             modelBuilder.Entity("Zoologico.modelo.Especie", b =>

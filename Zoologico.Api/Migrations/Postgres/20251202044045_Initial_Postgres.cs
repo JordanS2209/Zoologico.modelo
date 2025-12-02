@@ -38,7 +38,7 @@ namespace Zoologico.Api.Migrations.Postgres
                 });
 
             migrationBuilder.CreateTable(
-                name: "Animal",
+                name: "Animales",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -51,15 +51,15 @@ namespace Zoologico.Api.Migrations.Postgres
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Animal", x => x.Id);
+                    table.PrimaryKey("PK_Animales", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Animal_Especies_EspecieId",
+                        name: "FK_Animales_Especies_EspecieId",
                         column: x => x.EspecieId,
                         principalTable: "Especies",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Animal_Razas_RazaId",
+                        name: "FK_Animales_Razas_RazaId",
                         column: x => x.RazaId,
                         principalTable: "Razas",
                         principalColumn: "Id",
@@ -67,13 +67,13 @@ namespace Zoologico.Api.Migrations.Postgres
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Animal_EspecieId",
-                table: "Animal",
+                name: "IX_Animales_EspecieId",
+                table: "Animales",
                 column: "EspecieId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Animal_RazaId",
-                table: "Animal",
+                name: "IX_Animales_RazaId",
+                table: "Animales",
                 column: "RazaId");
         }
 
@@ -81,7 +81,7 @@ namespace Zoologico.Api.Migrations.Postgres
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Animal");
+                name: "Animales");
 
             migrationBuilder.DropTable(
                 name: "Especies");

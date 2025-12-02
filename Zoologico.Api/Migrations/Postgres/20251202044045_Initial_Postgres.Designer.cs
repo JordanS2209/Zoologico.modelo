@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Zoologico.Api.Migrations.Postgres
 {
     [DbContext(typeof(PostgresDbContext))]
-    [Migration("20251202005009_Initial_Postgres")]
+    [Migration("20251202044045_Initial_Postgres")]
     partial class Initial_Postgres
     {
         /// <inheritdoc />
@@ -54,7 +54,7 @@ namespace Zoologico.Api.Migrations.Postgres
 
                     b.HasIndex("RazaId");
 
-                    b.ToTable("Animal");
+                    b.ToTable("Animales");
                 });
 
             modelBuilder.Entity("Zoologico.modelo.Especie", b =>
